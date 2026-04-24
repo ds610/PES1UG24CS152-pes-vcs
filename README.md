@@ -466,9 +466,10 @@ echo "world" > file2.txt
 cat .pes/index    # Human-readable text format
 ```
 
-**📸 Screenshot 3A:** Run `./pes init`, `./pes add file1.txt file2.txt`, `./pes status` — show the output.
+**📸 Screenshot 3A:** <img width="1114" height="698" alt="image" src="https://github.com/user-attachments/assets/23ad9e96-4f28-4aab-a143-28855344b96f" />
 
-**📸 Screenshot 3B:** `cat .pes/index` showing the text-format index with your entries.
+**📸 Screenshot 3B:** <img width="950" height="171" alt="image" src="https://github.com/user-attachments/assets/32b31aef-d6d9-4a2b-8a12-c68aae6efd50" />
+
 
 ---
 
@@ -517,11 +518,13 @@ You can also run the full integration test:
 make test-integration
 ```
 
-**📸 Screenshot 4A:** Output of `./pes log` showing three commits with hashes, authors, timestamps, and messages.
+**📸 Screenshot 4A:** <img width="839" height="703" alt="image" src="https://github.com/user-attachments/assets/3c809e05-1607-4f4e-a5bd-1f8f78461e17" />
 
-**📸 Screenshot 4B:** `find .pes -type f | sort` showing object store growth after three commits.
 
-**📸 Screenshot 4C:** `cat .pes/refs/heads/main` and `cat .pes/HEAD` showing the reference chain.
+**📸 Screenshot 4B:** <img width="1493" height="690" alt="image" src="https://github.com/user-attachments/assets/120699bd-f3ea-47e6-855a-70fe3dd3fdb1" />
+
+**📸 Screenshot 4C:** <img width="943" height="177" alt="image" src="https://github.com/user-attachments/assets/654c3cde-9b03-4c84-8611-60b632948d80" />
+
 
 ---
 
@@ -531,12 +534,38 @@ The following questions cover filesystem concepts beyond the implementation scop
 
 ### Branching and Checkout
 
-**Q5.1:** A branch in Git is just a file in `.git/refs/heads/` containing a commit hash. Creating a branch is creating a file. Given this, how would you implement `pes checkout <branch>` — what files need to change in `.pes/`, and what must happen to the working directory? What makes this operation complex?
+Q5.1 — Implementing pes checkout <branch>
+What files change in .pes/:
 
-**Q5.2:** When switching branches, the working directory must be updated to match the target branch's tree. If the user has uncommitted changes to a tracked file, and that file differs between branches, checkout must refuse. Describe how you would detect this "dirty working directory" conflict using only the index and the object store.
+File	Change
+.pes/HEAD	Updated to ref: refs/heads/<branch>
+.pes/index	Rebuilt from the target commit's tree
+Working directory	Files created / overwritten / deleted to match
+What makes it complex:
 
-**Q5.3:** "Detached HEAD" means HEAD contains a commit hash directly instead of a branch reference. What happens if you make commits in this state? How could a user recover those commits?
+Handling untracked files that might be clobbered by the checkout
+File ↔ directory path transitions requiring careful ordering of deletions and creations
+The operation must be atomic — a crash mid-way must not leave HEAD and index out of sync
 
+Q5.2 — Detecting "Dirty Working Directory" Conflicts
+Algorithm (index + object store only, no re-hashing):
+
+For each index entry, call stat() on the working file
+Compare mtime and size against the stored values — any mismatch = dirty
+Walk the target branch's commit → tree → blob chain to find what that path should be
+If the file is dirty and differs between branches → refuse checkout
+Metadata comparison (mtime + size) is sufficient; no re-hashing of file contents needed.
+
+Q5.3 — Detached HEAD State
+What happens when committing in detached HEAD:
+
+Commits are written normally to the object store
+No branch file (refs/heads/*) is updated — only HEAD itself advances with each commit
+On switching away, those commits become unreachable to normal commands
+Recovery:
+
+Via reflog — which records every HEAD movement
+Read the old commit hash from the reflog, then run pes branch <new-branch> <hash> to create a branch pointing at those commits before GC removes them
 ### Garbage Collection and Space Reclamation
 
 **Q6.1:** Over time, the object store accumulates unreachable objects — blobs, trees, or commits that no branch points to (directly or transitively). Describe an algorithm to find and delete these objects. What data structure would you use to track "reachable" hashes efficiently? For a repository with 100,000 commits and 50 branches, estimate how many objects you'd need to visit.
