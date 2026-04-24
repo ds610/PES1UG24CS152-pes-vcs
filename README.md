@@ -374,9 +374,10 @@ The test program verifies:
 - Deduplication (same content → same hash → stored once)
 - Integrity checking (detects corrupted objects)
 
-**📸 Screenshot 1A:** Output of `./test_objects` showing all tests passing.
+**📸 Screenshot 1A:** <img width="1291" height="304" alt="image" src="https://github.com/user-attachments/assets/66c058b2-5b9a-4303-9ace-4de532ea980f" />
 
-**📸 Screenshot 1B:** `find .pes/objects -type f` showing the sharded directory structure.
+**📸 Screenshot 1B:** <img width="1407" height="64" alt="image" src="https://github.com/user-attachments/assets/28ead994-d1a8-4c82-82a4-e5a50c1ada20" />
+
 
 ---
 
@@ -406,11 +407,12 @@ The test program verifies:
 - Serialize → parse roundtrip preserves entries, modes, and hashes
 - Deterministic serialization (same entries in any order → identical output)
 
-**📸 Screenshot 2A:** Output of `./test_tree` showing all tests passing.
+**📸 Screenshot 2A:** <img width="1406" height="496" alt="image" src="https://github.com/user-attachments/assets/d670607c-9ad3-4746-bff1-a6bcddebd767" />
 
-**📸 Screenshot 2B:** Pick a tree object from `find .pes/objects -type f` and run `xxd .pes/objects/XX/YYY... | head -20` to show the raw binary format.
 
----
+**📸 Screenshot 2B:** <img width="1402" height="61" alt="image" src="https://github.com/user-attachments/assets/41b8b2b0-71c9-4551-ad0b-06db232573ff" />
+
+
 
 ## Phase 3: The Index (Staging Area)
 
