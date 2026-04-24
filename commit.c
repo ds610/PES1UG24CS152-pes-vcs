@@ -1,4 +1,4 @@
-// commit.c — Commit creation and history traversal
+//commit.c — Commit creation and history traversal
 //
 // Commit object format (stored as text, one field per line):
 //
@@ -164,18 +164,18 @@ int head_update(const ObjectID *new_commit) {
 
     char tmp_path[528];
     snprintf(tmp_path, sizeof(tmp_path), "%s.tmp", target_path);
-    
+   
     f = fopen(tmp_path, "w");
     if (!f) return -1;
-    
+   
     char hex[HASH_HEX_SIZE + 1];
     hash_to_hex(new_commit, hex);
     fprintf(f, "%s\n", hex);
-    
+   
     fflush(f);
     fsync(fileno(f));
     fclose(f);
-    
+   
     return rename(tmp_path, target_path);
 }
 
@@ -194,8 +194,28 @@ int head_update(const ObjectID *new_commit) {
 //
 // Returns 0 on success, -1 on error.
 int commit_create(const char *message, ObjectID *commit_id_out) {
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
-    (void)message; (void)commit_id_out;
-    return -1;
+    // 1. Build tree from index
+    ObjectID tree_id;
+    if (tree_from_index(&tree_id) != 0) return -1;
+
+    // 2. Build the commit struct
+    Commit c;
+    memset(&c, 0, sizeof(c));
+    c.tree = tree_id;
+    c.timestamp = (uint64_t)time(NULL);
+    strncpy(c.author, pes_author(), sizeof(c.author) - 1);
+    strncpy(c.message, message, sizeof(c.message) - 1);
+
+    // 3. Try to read parent
+    c.has_parent = (head_read(&c.parent) == 0) ? 1 : 0;
+
+    // 4. Serialize and store
+    void *data; size_t dlen;
+    if (commit_serialize(&c, &data, &dlen) != 0) return -1;
+    int rc = object_write(OBJ_COMMIT, data, dlen, commit_id_out);
+    free(data);
+    if (rc != 0) return -1;
+
+    // 5. Update HEAD
+    return head_update(commit_id_out);
 }
